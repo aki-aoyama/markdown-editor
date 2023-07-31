@@ -21,5 +21,5 @@ self.addEventListener('activate',(event) => {
 })
 
 self.addEventListener('fetch',(event) => {
-  event.responseWith(networkFaillingBackToCache(event.request))
+  event.respondWith(networkFaillingBackToCache(event.request))
 })
