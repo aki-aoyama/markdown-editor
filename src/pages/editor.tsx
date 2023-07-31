@@ -7,8 +7,10 @@ import { Button } from '../components/button'
 import { SaveModal } from '../components/save_modal'
 import { Header } from '../components/header'
 import { Link } from 'react-router-dom'
+import ConvertMarkdownWorker from 'worker-loader!../worker/convert_markdown_worker.ts'
 
-const {useState} = React
+const {useState,useEffect} = React
+const convertMarkdownWorker = new ConvertMarkdownWorker()
 
 const Wrapper = styled.div`
   bottom: 0;
@@ -48,16 +50,25 @@ const Preview = styled.div`
   width: 50vw;
 `
 
-const StorageKey = 'pages/editor:text'
+interface Props {
+  text: string
+  setText: (text: string) => void
+}
 
-export const Editor: React.FC = () => {
-  const [text,setText] = useStateWithStorage('',StorageKey)
-
-  const saveMemo = (): void => {
-    putMemo('TITLE',text)
-  }
-
+export const Editor: React.FC<Props> = (props) => {
+  const {text,setText} = props
   const [showModal,setShowModal] = useState(false)
+  const [html,setHtml] = useState('')
+
+  useEffect(() => {
+    convertMarkdownWorker.onmessage = (event) => {
+      setHtml(event.data.html)
+    }
+  },[])
+
+  useEffect(() => {
+    convertMarkdownWorker.postMessage(text)
+  },[text])
 
   return(
     <>
@@ -69,7 +80,7 @@ export const Editor: React.FC = () => {
           <Link to="/history">
             履歴を見る
           </Link>
-        </Header>  
+        </Header>
       </HeaderArea>
       <Wrapper>
         <TextArea
@@ -77,9 +88,7 @@ export const Editor: React.FC = () => {
           value = {text}
          />
         <Preview>
-          <ReactMarkdown>
-            {text}
-          </ReactMarkdown>
+          <div dangerouslySetInnerHTML={{__html: html}} />
         </Preview>
       </Wrapper>
       {showModal && (
